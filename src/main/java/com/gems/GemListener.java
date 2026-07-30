@@ -50,7 +50,7 @@ public class GemListener implements Listener {
 
         // Regular Right-Click Abilities
         if (name.contains("Fire Gem")) {
-            player.launchProjectable(Fireball.class);
+            player.launchProjectile(Fireball.class); // CORRIGIDO AQUI!
             player.sendMessage(ChatColor.RED + "Fireball launched!");
         } else if (name.contains("Water Gem")) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 100, 1));
