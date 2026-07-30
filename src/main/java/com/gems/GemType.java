@@ -8,10 +8,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.Arrays;
 
 public enum GemType {
-    FIRE("Gema de Fogo", ChatColor.RED, Material.MAGMA_CREAM, "Aumenta força e imunidade ao fogo"),
-    WATER("Gema de Água", ChatColor.BLUE, Material.HEART_OF_THE_SEA, "Velocidade na água e respiração aquática"),
-    EARTH("Gema de Terra", ChatColor.GREEN, Material.EMERALD, "Resistência e regeneração em terra"),
-    WIND("Gema de Vento", ChatColor.WHITE, Material.FEATHER, "Super pulo e velocidade no ar");
+    FIRE("Fire Gem", ChatColor.RED, Material.MAGMA_CREAM, "Aumenta força e imunidade ao fogo"),
+    WATER("Water Gem", ChatColor.BLUE, Material.HEART_OF_THE_SEA, "Velocidade na água e respiração aquática"),
+    EARTH("Stone Gem", ChatColor.GREEN, Material.EMERALD, "Resistência e regeneração em terra"),
+    WIND("Air Gem", ChatColor.WHITE, Material.FEATHER, "Super pulo e velocidade no ar");
 
     private final String name;
     private final ChatColor color;
@@ -49,7 +49,7 @@ public enum GemType {
             meta.setLore(Arrays.asList(
                 ChatColor.GRAY + description,
                 "",
-                ChatColor.YELLOW + "Poder Elemental"
+                ChatColor.YELLOW + "Elemental Power"
             ));
             item.setItemMeta(meta);
         }
