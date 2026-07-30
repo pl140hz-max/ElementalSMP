@@ -7,11 +7,11 @@ public class GemsPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(new GemListener(this), this);
-        getLogger().info("ElementalSMP ativado com sucesso!");
+        getLogger().info("ElementalSMP successfully enabled!");
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("ElementalSMP desativado.");
+        getLogger().info("ElementalSMP disabled.");
     }
 }
