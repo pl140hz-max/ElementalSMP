@@ -1,6 +1,0 @@
-name: ElementalSMP
-version: 1.0
-main: com.gems.ElementalSMP
-api-version: '1.21'
-author: yaboyPL
-description: A plugin that gives players unique elemental gems with active and passive abilities.
