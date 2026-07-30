@@ -1,5 +1,18 @@
 name: GemsPlugin
-version: '1.0-SNAPSHOT'
-main: com.gems.GemsPlugin
-api-version: '1.21'
-description: Elemental Gems plugin for ElementalSMP server.
+version: 1.0.0
+main: com.elementalsmp.gems.GemsPlugin
+api-version: 1.21
+authors: [ElementalSMP]
+description: Elemental Gems plugin featuring custom abilities and cross-platform support.
+
+commands:
+  givegem:
+    description: Gives an Elemental Gem to a player.
+    usage: /givegem <player> <type>
+    permission: gems.command.give
+    permission-message: You do not have permission to use this command.
+
+permissions:
+  gems.command.give:
+    description: Allows giving gem items to players.
+    default: op
