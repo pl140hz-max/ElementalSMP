@@ -8,10 +8,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.Arrays;
 
 public enum GemType {
-    FIRE("Fire Gem", ChatColor.RED, Material.MAGMA_CREAM, "Aumenta força e imunidade ao fogo"),
-    WATER("Water Gem", ChatColor.BLUE, Material.HEART_OF_THE_SEA, "Velocidade na água e respiração aquática"),
-    EARTH("Stone Gem", ChatColor.GREEN, Material.EMERALD, "Resistência e regeneração em terra"),
-    WIND("Air Gem", ChatColor.WHITE, Material.FEATHER, "Super pulo e velocidade no ar");
+    FIRE("Fire Gem", ChatColor.RED, Material.MAGMA_CREAM, "Increases strength and fire immunity"),
+    WATER("Water Gem", ChatColor.BLUE, Material.HEART_OF_THE_SEA, "Water speed and water breathing"),
+    EARTH("Earth Gem", ChatColor.GREEN, Material.EMERALD, "Resistance and regeneration on land"),
+    WIND("Wind Gem", ChatColor.WHITE, Material.FEATHER, "Super jump and speed in the air");
 
     private final String name;
     private final ChatColor color;
@@ -41,7 +41,7 @@ public enum GemType {
         return description;
     }
 
-    public ItemStack createGem() {
+    public ItemStack createItem(GemsPlugin plugin) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
@@ -56,7 +56,7 @@ public enum GemType {
         return item;
     }
 
-    public static GemType fromItemStack(ItemStack item) {
+    public static GemType fromItem(GemsPlugin plugin, ItemStack item) {
         if (item == null || !item.hasItemMeta()) return null;
         ItemMeta meta = item.getItemMeta();
         if (meta == null || !meta.hasDisplayName()) return null;
