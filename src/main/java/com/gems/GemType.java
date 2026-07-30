@@ -41,7 +41,7 @@ public enum GemType {
         return description;
     }
 
-    public ItemStack createItem(GemsPlugin plugin) {
+    public ItemStack createGem() {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
@@ -56,7 +56,7 @@ public enum GemType {
         return item;
     }
 
-    public static GemType fromItem(GemsPlugin plugin, ItemStack item) {
+    public static GemType fromItemStack(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return null;
         ItemMeta meta = item.getItemMeta();
         if (meta == null || !meta.hasDisplayName()) return null;
