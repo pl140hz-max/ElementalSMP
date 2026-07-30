@@ -1,28 +1,28 @@
-package com.gems;
+package com.elementalsmp.gems;
 
+import com.elementalsmp.gems.commands.GemCommand;
+import com.elementalsmp.gems.listeners.GemListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class GemsPlugin extends JavaPlugin {
 
-    // Direct link to your .zip resource pack (leave empty until it's ready)
-    private String resourcePackUrl = "";
-
     @Override
     public void onEnable() {
-        getServer().getPluginManager().registerEvents(new GemListener(this), this);
-        getLogger().info("ElementalSMP successfully enabled!");
+        // Register events
+        getServer().getPluginManager().registerEvents(new GemListener(), this);
+
+        // Register command and tab completer
+        if (getCommand("givegem") != null) {
+            GemCommand gemCommand = new GemCommand();
+            getCommand("givegem").setExecutor(gemCommand);
+            getCommand("givegem").setTabCompleter(gemCommand);
+        }
+
+        getLogger().info("ElementalSMP GemsPlugin successfully enabled!");
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("ElementalSMP disabled.");
-    }
-
-    public String getResourcePackUrl() {
-        return resourcePackUrl;
-    }
-
-    public void setResourcePackUrl(String resourcePackUrl) {
-        this.resourcePackUrl = resourcePackUrl;
+        getLogger().info("ElementalSMP GemsPlugin disabled.");
     }
 }
