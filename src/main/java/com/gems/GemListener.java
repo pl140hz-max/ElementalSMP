@@ -1,4 +1,4 @@
-package com.gems;
+package com.elementalsmp.gems.listeners;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
