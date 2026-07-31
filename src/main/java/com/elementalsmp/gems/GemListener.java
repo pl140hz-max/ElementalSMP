@@ -11,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -54,6 +55,7 @@ public class GemListener implements Listener {
         }, 0L, 10L);
     }
 
+    // --- Right-Click Abilities ---
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) return;
@@ -117,6 +119,85 @@ public class GemListener implements Listener {
         }
     }
 
+    // --- Third Ability Triggered via Drop Key ('Q') ---
+    @EventHandler
+    public void onItemDrop(PlayerDropItemEvent event) {
+        ItemStack item = event.getItemDrop().getItemStack();
+
+        if (item == null || !item.hasItemMeta()) return;
+
+        Player player = event.getPlayer();
+
+        if (isGem(item, "Air Gem")) {
+            event.setCancelled(true);
+            if (checkCooldown(player, "air_pulse", 15)) {
+                triggerAirPulse(player);
+            }
+        } else if (isGem(item, "Fire Gem")) {
+            event.setCancelled(true);
+            if (checkCooldown(player, "flame_nova", 15)) {
+                triggerFlameNova(player);
+            }
+        } else if (isGem(item, "Earth Gem")) {
+            event.setCancelled(true);
+            if (checkCooldown(player, "earth_slam", 15)) {
+                triggerEarthSlam(player);
+            }
+        } else if (isGem(item, "Water Gem")) {
+            event.setCancelled(true);
+            if (checkCooldown(player, "healing_wave", 20)) {
+                triggerHealingWave(player);
+            }
+        }
+    }
+
+    // --- Drop Ability Implementations ---
+    private void triggerAirPulse(Player player) {
+        player.playSound(player.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST, 1.5f, 1.0f);
+        player.getNearbyEntities(6, 6, 6).forEach(entity -> {
+            if (entity instanceof LivingEntity && entity != player) {
+                Vector push = entity.getLocation().toVector().subtract(player.getLocation().toVector()).normalize().multiply(1.8).setY(0.5);
+                entity.setVelocity(push);
+            }
+        });
+        player.sendMessage("Air Pulse activated!");
+    }
+
+    private void triggerFlameNova(Player player) {
+        player.playSound(player.getLocation(), Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 1.0f, 1.2f);
+        player.getNearbyEntities(5, 5, 5).forEach(entity -> {
+            if (entity instanceof LivingEntity target && entity != player) {
+                target.setFireTicks(100);
+                target.damage(5.0, player);
+            }
+        });
+        player.sendMessage("Flame Nova activated!");
+    }
+
+    private void triggerEarthSlam(Player player) {
+        player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1.0f, 0.5f);
+        player.getNearbyEntities(5, 5, 5).forEach(entity -> {
+            if (entity instanceof LivingEntity target && entity != player) {
+                target.setVelocity(new Vector(0, 1.2, 0));
+                target.damage(4.0, player);
+            }
+        });
+        player.sendMessage("Earth Slam activated!");
+    }
+
+    private void triggerHealingWave(Player player) {
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, 1.0f, 1.0f);
+        player.addPotionEffect(new PotionEffect(PotionEffectType.INSTANT_HEALTH, 1, 1));
+        player.getNearbyEntities(6, 6, 6).forEach(entity -> {
+            if (entity instanceof Player ally && entity != player) {
+                ally.addPotionEffect(new PotionEffect(PotionEffectType.INSTANT_HEALTH, 1, 0));
+                ally.sendMessage("Healed by " + player.getName() + "'s Water Wave!");
+            }
+        });
+        player.sendMessage("Healing Wave activated!");
+    }
+
+    // --- Helpers ---
     private void launchTrident(Player player) {
         int remaining = activeTridents.get(player.getUniqueId());
         Trident trident = player.launchProjectile(Trident.class);
