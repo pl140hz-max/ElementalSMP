@@ -1,28 +1,19 @@
 package com.elementalsmp.gems;
 
-import com.elementalsmp.gems.commands.GemCommand;
 import com.elementalsmp.gems.listeners.GemListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public class GemsPlugin extends JavaPlugin {
+public final class GemsPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Register events
-        getServer().getPluginManager().registerEvents(new GemListener(), this);
-
-        // Register command and tab completer
-        if (getCommand("givegem") != null) {
-            GemCommand gemCommand = new GemCommand();
-            getCommand("givegem").setExecutor(gemCommand);
-            getCommand("givegem").setTabCompleter(gemCommand);
-        }
-
-        getLogger().info("ElementalSMP GemsPlugin successfully enabled!");
+        // Pass 'this' into GemListener so it can schedule tasks and handle metadata!
+        getServer().getPluginManager().registerEvents(new GemListener(this), this);
+        getLogger().info("Elemental Gems Plugin Enabled!");
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("ElementalSMP GemsPlugin disabled.");
+        getLogger().info("Elemental Gems Plugin Disabled!");
     }
 }
