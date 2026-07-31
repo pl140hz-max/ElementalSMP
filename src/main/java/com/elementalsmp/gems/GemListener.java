@@ -1,8 +1,10 @@
 package com.elementalsmp.gems.listeners;
 
+import com.elementalsmp.gems.managers.TrustManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -19,6 +21,7 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -26,14 +29,17 @@ import java.util.*;
 public class GemListener implements Listener {
 
     private final JavaPlugin plugin;
+    private final TrustManager trustManager;
     private final Map<UUID, Map<String, Long>> cooldowns = new HashMap<>();
     private final Map<UUID, Integer> activeTridents = new HashMap<>();
 
-    public GemListener(JavaPlugin plugin) {
+    public GemListener(JavaPlugin plugin, TrustManager trustManager) {
         this.plugin = plugin;
+        this.trustManager = trustManager;
         startPassiveRunnable();
     }
 
+    // --- Passive Held-Item Effects ---
     private void startPassiveRunnable() {
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
@@ -55,7 +61,7 @@ public class GemListener implements Listener {
         }, 0L, 10L);
     }
 
-    // --- Right-Click Abilities ---
+    // --- Ability 1 & 2: Right-Click / Sneak + Right-Click ---
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) return;
@@ -65,6 +71,7 @@ public class GemListener implements Listener {
         
         if (!event.getAction().name().contains("RIGHT_CLICK")) return;
 
+        // Active Trident Throw Handling
         if (activeTridents.getOrDefault(player.getUniqueId(), 0) > 0) {
             launchTrident(player);
             return;
@@ -119,7 +126,7 @@ public class GemListener implements Listener {
         }
     }
 
-    // --- Third Ability Triggered via Drop Key ('Q') ---
+    // --- Ability 3: Drop Key ('Q') Triggers ---
     @EventHandler
     public void onItemDrop(PlayerDropItemEvent event) {
         ItemStack item = event.getItemDrop().getItemStack();
@@ -151,11 +158,12 @@ public class GemListener implements Listener {
         }
     }
 
-    // --- Drop Ability Implementations ---
+    // --- Drop Ability Logic ---
     private void triggerAirPulse(Player player) {
         player.playSound(player.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST, 1.5f, 1.0f);
         player.getNearbyEntities(6, 6, 6).forEach(entity -> {
-            if (entity instanceof LivingEntity && entity != player) {
+            if (entity instanceof LivingEntity target && entity != player) {
+                if (target instanceof Player p && trustManager.isTrusted(player.getUniqueId(), p.getUniqueId())) return;
                 Vector push = entity.getLocation().toVector().subtract(player.getLocation().toVector()).normalize().multiply(1.8).setY(0.5);
                 entity.setVelocity(push);
             }
@@ -167,6 +175,7 @@ public class GemListener implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 1.0f, 1.2f);
         player.getNearbyEntities(5, 5, 5).forEach(entity -> {
             if (entity instanceof LivingEntity target && entity != player) {
+                if (target instanceof Player p && trustManager.isTrusted(player.getUniqueId(), p.getUniqueId())) return;
                 target.setFireTicks(100);
                 target.damage(5.0, player);
             }
@@ -178,6 +187,7 @@ public class GemListener implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1.0f, 0.5f);
         player.getNearbyEntities(5, 5, 5).forEach(entity -> {
             if (entity instanceof LivingEntity target && entity != player) {
+                if (target instanceof Player p && trustManager.isTrusted(player.getUniqueId(), p.getUniqueId())) return;
                 target.setVelocity(new Vector(0, 1.2, 0));
                 target.damage(4.0, player);
             }
@@ -197,7 +207,47 @@ public class GemListener implements Listener {
         player.sendMessage("Healing Wave activated!");
     }
 
-    // --- Helpers ---
+    // --- Strength SMP Tsunami Wave Charge ---
+    private void triggerTsunamiRide(Player player) {
+        Vector dashDirection = player.getLocation().getDirection().normalize().multiply(2.5).setY(0.4);
+        player.setVelocity(dashDirection);
+        player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_3, 1.5f, 0.8f);
+
+        new BukkitRunnable() {
+            int ticks = 0;
+
+            @Override
+            public void run() {
+                if (ticks >= 15 || player.isDead() || !player.isOnline()) {
+                    this.cancel();
+                    return;
+                }
+
+                Location loc = player.getLocation();
+                World world = loc.getWorld();
+
+                if (world != null) {
+                    world.spawnParticle(Particle.SPLASH, loc, 35, 0.6, 0.6, 0.6, 0.2);
+                    world.spawnParticle(Particle.BUBBLE_POP, loc, 20, 0.5, 0.5, 0.5, 0.1);
+                    world.spawnParticle(Particle.FALLING_WATER, loc, 15, 0.4, 0.4, 0.4, 0.1);
+                }
+
+                for (Entity entity : player.getNearbyEntities(3.5, 3.5, 3.5)) {
+                    if (entity instanceof LivingEntity target && entity != player) {
+                        if (target instanceof Player p && trustManager.isTrusted(player.getUniqueId(), p.getUniqueId())) continue;
+
+                        target.damage(8.0, player);
+                        Vector throwVec = target.getLocation().toVector().subtract(player.getLocation().toVector()).normalize().multiply(1.5).setY(0.6);
+                        target.setVelocity(throwVec);
+                        player.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, 1.2f, 0.9f);
+                    }
+                }
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    // --- Helper Mechanics ---
     private void launchTrident(Player player) {
         int remaining = activeTridents.get(player.getUniqueId());
         Trident trident = player.launchProjectile(Trident.class);
@@ -253,21 +303,16 @@ public class GemListener implements Listener {
         }
     }
 
-    private void triggerTsunamiRide(Player player) {
-        Vector dir = player.getLocation().getDirection().normalize().setY(0.2);
-        player.setVelocity(dir.multiply(1.8));
-
-        player.getNearbyEntities(4, 4, 4).forEach(entity -> {
-            if (entity instanceof LivingEntity target && entity != player) {
-                target.setRemainingAir(0);
-                target.damage(6.0, player);
-            }
-        });
-    }
-
+    // --- Damage & Entity Handlers ---
     @EventHandler
     public void onEntityDamage(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Fireball fireball && fireball.hasMetadata("ArmorPiercingFireball")) {
+            if (event.getEntity() instanceof Player target && fireball.getShooter() instanceof Player shooter) {
+                if (trustManager.isTrusted(shooter.getUniqueId(), target.getUniqueId())) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
             if (event.getEntity() instanceof LivingEntity target) {
                 event.setDamage(0);
                 target.damage(10.0);
@@ -283,6 +328,7 @@ public class GemListener implements Listener {
         }
     }
 
+    // --- Cooldown Manager ---
     private boolean checkCooldown(Player player, String ability, int seconds) {
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
