@@ -15,8 +15,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -41,44 +41,59 @@ public class GemListener implements Listener {
         startPassiveAndHudRunnable();
     }
 
-    // --- Passive Effects & Action Bar Cooldown Display Loop ---
+    // --- Passive Effects & Reorganized HUD Runnable ---
     private void startPassiveAndHudRunnable() {
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
                 ItemStack mainHand = p.getInventory().getItemInMainHand();
-                ItemStack offHand = p.getInventory().getItemInOffHand(); // FIXED: Uses getItemInOffHand()
+                ItemStack offHand = p.getInventory().getItemInOffHand();
                 ItemStack heldGem = getActiveGem(mainHand, offHand);
 
                 if (heldGem == null) continue;
 
-                if (isGem(heldGem, "Air Gem")) {
+                if (isGem(heldGem, Material.BREEZE_ROD, "Air Gem")) {
                     p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 30, 0, false, false));
-                    sendActionBar(p, buildHud(p, "§b§lAIR GEM", "Dash", "air_dash", 8, "Breeze", "air_breeze", 30, "Pulse", "air_pulse", 15));
-                } else if (isGem(heldGem, "Fire Gem")) {
+                    sendActionBar(p, buildHud(p, "§b§lAIR GEM", 
+                            "Dash [RC]", "air_dash", 8, 
+                            "Breeze [OFF]", "air_breeze", 30, 
+                            "Pulse [SH-RC]", "air_pulse", 15));
+
+                } else if (isGem(heldGem, Material.BLAZE_ROD, "Fire Gem")) {
                     p.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 30, 0, false, false));
-                    sendActionBar(p, buildHud(p, "§c§lFIRE GEM", "Fireball", "fireball", 6, "Flame Nova", "flame_nova", 15, "Nova Drop", "flame_nova", 15));
-                } else if (isGem(heldGem, "Earth Gem")) {
+                    sendActionBar(p, buildHud(p, "§c§lFIRE GEM", 
+                            "Fireball [RC]", "fireball", 6, 
+                            "Flame Wave [OFF]", "flame_wave", 12, 
+                            "Flame Nova [SH-RC]", "flame_nova", 15));
+
+                } else if (isGem(heldGem, Material.FIREWORK_STAR, "Earth Gem")) {
                     p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 30, 0, false, false));
-                    sendActionBar(p, buildHud(p, "§e§lEARTH GEM", "Might", "earth_might", 25, "Mud Wall", "earth_wall", 20, "Slam", "earth_slam", 15));
-                } else if (isGem(heldGem, "Water Gem")) {
+                    sendActionBar(p, buildHud(p, "§e§lEARTH GEM", 
+                            "Might [RC]", "earth_might", 25, 
+                            "Mud Wall [OFF]", "earth_wall", 20, 
+                            "Slam [SH-RC]", "earth_slam", 15));
+
+                } else if (isGem(heldGem, Material.HEART_OF_THE_SEA, "Water Gem")) {
                     p.addPotionEffect(new PotionEffect(PotionEffectType.WATER_BREATHING, 30, 0, false, false));
                     if (p.isInWater()) {
                         p.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 30, 1, false, false));
                     }
-                    sendActionBar(p, buildHud(p, "§9§lWATER GEM", "Tsunami", "tsunami", 18, "Tridents", "water_tridents", 30, "Heal Wave", "healing_wave", 20));
+                    sendActionBar(p, buildHud(p, "§9§lWATER GEM", 
+                            "Tsunami [RC]", "tsunami", 18, 
+                            "Tridents [OFF]", "water_tridents", 30, 
+                            "Heal Wave [SH-RC]", "healing_wave", 20));
                 }
             }
         }, 0L, 10L);
     }
 
-    private String buildHud(Player player, String gemTitle, String a1Name, String a1Key, int a1Cd, String a2Name, String a2Key, int a2Cd, String a3Name, String a3Key, int a3Cd) {
-        return gemTitle + " §8| " +
-                "§f" + a1Name + ": " + formatCooldown(player, a1Key, a1Cd) + " §8| " +
-                "§f" + a2Name + ": " + formatCooldown(player, a2Key, a2Cd) + " §8| " +
-                "§f" + a3Name + ": " + formatCooldown(player, a3Key, a3Cd);
+    private String buildHud(Player player, String title, String a1, String k1, int c1, String a2, String k2, int c2, String a3, String k3, int c3) {
+        return title + " §8| " +
+                "§f" + a1 + ": " + formatCd(player, k1, c1) + " §8| " +
+                "§f" + a2 + ": " + formatCd(player, k2, c2) + " §8| " +
+                "§f" + a3 + ": " + formatCd(player, k3, c3);
     }
 
-    private String formatCooldown(Player player, String key, int seconds) {
+    private String formatCd(Player player, String key, int seconds) {
         long remaining = getRemainingCooldownSeconds(player, key, seconds);
         return remaining > 0 ? "§c" + remaining + "s" : "§aREADY";
     }
@@ -87,7 +102,7 @@ public class GemListener implements Listener {
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
     }
 
-    // --- Ability 1 & 2: Right-Click (Main hand & Offhand supported) ---
+    // --- Right Click Events: 1st Ability (Normal) & 3rd Ability (Shift + Right Click) ---
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -98,8 +113,6 @@ public class GemListener implements Listener {
         if (gem == null) return;
 
         if (!event.getAction().name().contains("RIGHT_CLICK")) return;
-
-        // Prevent double firing if holding gems or items in both hands
         if (event.getHand() == EquipmentSlot.OFF_HAND && isGemItem(mainHand)) return;
 
         // Active Trident Throwing
@@ -108,17 +121,28 @@ public class GemListener implements Listener {
             return;
         }
 
-        if (isGem(gem, "Air Gem")) {
-            if (player.isSneaking()) {
-                if (checkCooldown(player, "air_breeze", 30)) summonBreezes(player);
-            } else {
-                if (checkCooldown(player, "air_dash", 8)) {
-                    Vector dir = player.getLocation().getDirection().normalize().multiply(2.2);
-                    player.setVelocity(dir);
-                    player.playSound(player.getLocation(), Sound.ENTITY_WIND_CHARGE_THROW, 1.0f, 1.0f);
-                }
+        // --- 3RD ABILITY: Shift + Right Click ---
+        if (player.isSneaking()) {
+            if (isGem(gem, Material.BREEZE_ROD, "Air Gem")) {
+                if (checkCooldown(player, "air_pulse", 15)) triggerAirPulse(player);
+            } else if (isGem(gem, Material.BLAZE_ROD, "Fire Gem")) {
+                if (checkCooldown(player, "flame_nova", 15)) triggerFlameNova(player);
+            } else if (isGem(gem, Material.FIREWORK_STAR, "Earth Gem")) {
+                if (checkCooldown(player, "earth_slam", 15)) triggerEarthSlam(player);
+            } else if (isGem(gem, Material.HEART_OF_THE_SEA, "Water Gem")) {
+                if (checkCooldown(player, "healing_wave", 20)) triggerHealingWave(player);
             }
-        } else if (isGem(gem, "Fire Gem")) {
+            return;
+        }
+
+        // --- 1ST ABILITY: Normal Right Click ---
+        if (isGem(gem, Material.BREEZE_ROD, "Air Gem")) {
+            if (checkCooldown(player, "air_dash", 8)) {
+                Vector dir = player.getLocation().getDirection().normalize().multiply(2.2);
+                player.setVelocity(dir);
+                player.playSound(player.getLocation(), Sound.ENTITY_WIND_CHARGE_THROW, 1.0f, 1.0f);
+            }
+        } else if (isGem(gem, Material.BLAZE_ROD, "Fire Gem")) {
             if (checkCooldown(player, "fireball", 6)) {
                 Fireball fireball = player.launchProjectile(Fireball.class);
                 fireball.setIsIncendiary(true);
@@ -126,54 +150,66 @@ public class GemListener implements Listener {
                 fireball.setMetadata("ArmorPiercingFireball", new FixedMetadataValue(plugin, true));
                 player.playSound(player.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1.0f, 1.0f);
             }
-        } else if (isGem(gem, "Earth Gem")) {
-            if (player.isSneaking()) {
-                if (checkCooldown(player, "earth_wall", 20)) spawnPackedMudWall(player);
-            } else {
-                if (checkCooldown(player, "earth_might", 25)) {
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 200, 1));
-                    spawnTemporaryGolem(player);
-                    player.playSound(player.getLocation(), Sound.ENTITY_IRON_GOLEM_REPAIR, 1.0f, 0.8f);
-                }
+        } else if (isGem(gem, Material.FIREWORK_STAR, "Earth Gem")) {
+            if (checkCooldown(player, "earth_might", 25)) {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 200, 1));
+                spawnTemporaryGolem(player);
+                player.playSound(player.getLocation(), Sound.ENTITY_IRON_GOLEM_REPAIR, 1.0f, 0.8f);
             }
-        } else if (isGem(gem, "Water Gem")) {
-            if (player.isSneaking()) {
-                if (checkCooldown(player, "water_tridents", 30)) {
-                    activeTridents.put(player.getUniqueId(), 3);
-                    player.sendMessage("§a[Water Gem] 3 Floating Tridents active! Right-click to launch them!");
-                    player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 1.0f, 1.2f);
-                }
-            } else {
-                if (checkCooldown(player, "tsunami", 18)) triggerTsunamiRide(player);
-            }
+        } else if (isGem(gem, Material.HEART_OF_THE_SEA, "Water Gem")) {
+            if (checkCooldown(player, "tsunami", 18)) triggerTsunamiRide(player);
         }
     }
 
-    // --- Ability 3: Drop Key ('Q') Triggers ---
+    // --- 2ND ABILITY: Offhand Key ('F' Swap Hand) ---
     @EventHandler
-    public void onItemDrop(PlayerDropItemEvent event) {
-        ItemStack item = event.getItemDrop().getItemStack();
-
-        if (item == null || !item.hasItemMeta()) return;
-
+    public void onOffhandSwap(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
+        ItemStack heldGem = getActiveGem(player.getInventory().getItemInMainHand(), player.getInventory().getItemInOffHand());
 
-        if (isGem(item, "Air Gem")) {
-            event.setCancelled(true);
-            if (checkCooldown(player, "air_pulse", 15)) triggerAirPulse(player);
-        } else if (isGem(item, "Fire Gem")) {
-            event.setCancelled(true);
-            if (checkCooldown(player, "flame_nova", 15)) triggerFlameNova(player);
-        } else if (isGem(item, "Earth Gem")) {
-            event.setCancelled(true);
-            if (checkCooldown(player, "earth_slam", 15)) triggerEarthSlam(player);
-        } else if (isGem(item, "Water Gem")) {
-            event.setCancelled(true);
-            if (checkCooldown(player, "healing_wave", 20)) triggerHealingWave(player);
+        if (heldGem == null) return;
+
+        event.setCancelled(true); // Prevent item swap when holding a gem
+
+        if (isGem(heldGem, Material.BREEZE_ROD, "Air Gem")) {
+            if (checkCooldown(player, "air_breeze", 30)) summonBreezes(player);
+        } else if (isGem(heldGem, Material.BLAZE_ROD, "Fire Gem")) {
+            if (checkCooldown(player, "flame_wave", 12)) triggerFlameWave(player);
+        } else if (isGem(heldGem, Material.FIREWORK_STAR, "Earth Gem")) {
+            if (checkCooldown(player, "earth_wall", 20)) spawnPackedMudWall(player);
+        } else if (isGem(heldGem, Material.HEART_OF_THE_SEA, "Water Gem")) {
+            if (checkCooldown(player, "water_tridents", 30)) {
+                activeTridents.put(player.getUniqueId(), 3);
+                player.sendMessage("§a[Water Gem] 3 Floating Tridents active! Right-click to launch them!");
+                player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 1.0f, 1.2f);
+            }
         }
     }
 
-    // --- Ability Implementation Logic (With Trust System Protections) ---
+    // --- Ability Executions ---
+
+    private void triggerFlameWave(Player player) {
+        Vector dir = player.getLocation().getDirection().setY(0).normalize();
+        Location start = player.getLocation();
+        World world = start.getWorld();
+
+        if (world != null) {
+            world.playSound(start, Sound.ITEM_FIRECHARGE_USE, 1.5f, 0.8f);
+            for (int i = 1; i <= 8; i++) {
+                Location waveLoc = start.clone().add(dir.clone().multiply(i));
+                world.spawnParticle(Particle.FLAME, waveLoc, 20, 0.8, 0.5, 0.8, 0.05);
+                
+                for (Entity entity : world.getNearbyEntities(waveLoc, 1.5, 1.5, 1.5)) {
+                    if (entity instanceof LivingEntity target && entity != player) {
+                        if (target instanceof Player p && trustManager.isTrusted(player.getUniqueId(), p.getUniqueId())) continue;
+                        target.setFireTicks(80);
+                        target.damage(6.0, player);
+                    }
+                }
+            }
+        }
+    }
+
     private void triggerAirPulse(Player player) {
         player.playSound(player.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST, 1.5f, 1.0f);
         player.getNearbyEntities(6, 6, 6).forEach(entity -> {
@@ -186,12 +222,23 @@ public class GemListener implements Listener {
     }
 
     private void triggerFlameNova(Player player) {
-        player.playSound(player.getLocation(), Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 1.0f, 1.2f);
-        player.getNearbyEntities(5, 5, 5).forEach(entity -> {
+        Location loc = player.getLocation();
+        World world = loc.getWorld();
+
+        if (world != null) {
+            world.spawnParticle(Particle.FLAME, loc, 150, 2.5, 1.0, 2.5, 0.2);
+            world.spawnParticle(Particle.LAVA, loc, 40, 1.5, 1.0, 1.5, 0.1);
+            world.playSound(loc, Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 1.5f, 0.8f);
+        }
+
+        player.getNearbyEntities(6, 6, 6).forEach(entity -> {
             if (entity instanceof LivingEntity target && entity != player) {
                 if (target instanceof Player p && trustManager.isTrusted(player.getUniqueId(), p.getUniqueId())) return;
-                target.setFireTicks(100);
-                target.damage(5.0, player);
+                target.setFireTicks(120);
+                target.damage(8.0, player);
+
+                Vector push = target.getLocation().toVector().subtract(player.getLocation().toVector()).normalize().multiply(1.2).setY(0.4);
+                target.setVelocity(push);
             }
         });
     }
@@ -257,7 +304,62 @@ public class GemListener implements Listener {
         }.runTaskTimer(plugin, 0L, 1L);
     }
 
-    // --- Helpers ---
+    // --- Fixed & Rebuilt Mud Wall Logic ---
+    private void spawnPackedMudWall(Player player) {
+        Location pLoc = player.getLocation();
+        World world = pLoc.getWorld();
+        if (world == null) return;
+
+        int radius = 3;
+        int wallHeight = 6;
+        int startY = pLoc.getBlockY();
+        List<Block> wallBlocks = new ArrayList<>();
+
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                // Outer ring ring calculations for circular wall
+                double distance = Math.sqrt(x * x + z * z);
+                if (distance >= radius - 0.8 && distance <= radius + 0.8) {
+                    for (int y = 0; y < wallHeight; y++) {
+                        Block block = world.getBlockAt(pLoc.getBlockX() + x, startY + y, pLoc.getBlockZ() + z);
+
+                        if (isUnbreakable(block.getType())) continue;
+
+                        if (block.getType() != Material.AIR) {
+                            block.breakNaturally();
+                        }
+
+                        block.setType(Material.PACKED_MUD);
+                        wallBlocks.add(block);
+                    }
+                }
+            }
+        }
+
+        world.playSound(pLoc, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 1.5f, 0.5f);
+
+        // Despawn mud wall after 8 seconds
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            for (Block b : wallBlocks) {
+                if (b.getType() == Material.PACKED_MUD) {
+                    b.setType(Material.AIR);
+                }
+            }
+        }, 160L);
+    }
+
+    private boolean isUnbreakable(Material mat) {
+        return mat == Material.BEDROCK ||
+               mat == Material.OBSIDIAN ||
+               mat == Material.CRYING_OBSIDIAN ||
+               mat == Material.ANVIL ||
+               mat == Material.CHIPPED_ANVIL ||
+               mat == Material.DAMAGED_ANVIL ||
+               mat == Material.ENCHANTING_TABLE ||
+               mat == Material.REINFORCED_DEEPSLATE;
+    }
+
+    // --- Helpers & Cooldown Logic ---
     private void launchTrident(Player player) {
         int remaining = activeTridents.get(player.getUniqueId());
         Trident trident = player.launchProjectile(Trident.class);
@@ -289,25 +391,6 @@ public class GemListener implements Listener {
         }, 100L);
     }
 
-    private void spawnPackedMudWall(Player player) {
-        Location center = player.getLocation();
-        int radius = 5;
-
-        for (int x = -radius; x <= radius; x++) {
-            for (int z = -radius; z <= radius; z++) {
-                if (Math.abs(x * x + z * z - radius * radius) < radius) {
-                    Block block = center.clone().add(x, 0, z).getBlock();
-                    if (block.getType() == Material.AIR) {
-                        block.setType(Material.PACKED_MUD);
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                            if (block.getType() == Material.PACKED_MUD) block.setType(Material.AIR);
-                        }, 160L);
-                    }
-                }
-            }
-        }
-    }
-
     @EventHandler
     public void onEntityDamage(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Fireball fireball && fireball.hasMetadata("ArmorPiercingFireball")) {
@@ -332,7 +415,6 @@ public class GemListener implements Listener {
         }
     }
 
-    // --- Cooldown Logic ---
     private boolean checkCooldown(Player player, String ability, int seconds) {
         long remaining = getRemainingCooldownSeconds(player, ability, seconds);
         if (remaining > 0) return false;
@@ -363,8 +445,8 @@ public class GemListener implements Listener {
                (item.getItemMeta().getDisplayName().contains("Gem"));
     }
 
-    private boolean isGem(ItemStack item, String gemName) {
-        return item != null && item.hasItemMeta() && item.getItemMeta().hasDisplayName() &&
-               item.getItemMeta().getDisplayName().contains(gemName);
+    private boolean isGem(ItemStack item, Material material, String gemName) {
+        return item != null && item.getType() == material && item.hasItemMeta() && 
+               item.getItemMeta().hasDisplayName() && item.getItemMeta().getDisplayName().contains(gemName);
     }
 }
