@@ -46,12 +46,11 @@ public class GemListener implements Listener {
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
                 ItemStack mainHand = p.getInventory().getItemInMainHand();
-                ItemStack offHand = p.getInventory().getItemInHand();
+                ItemStack offHand = p.getInventory().getItemInOffHand(); // FIXED: Uses getItemInOffHand()
                 ItemStack heldGem = getActiveGem(mainHand, offHand);
 
                 if (heldGem == null) continue;
 
-                // Passives
                 if (isGem(heldGem, "Air Gem")) {
                     p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 30, 0, false, false));
                     sendActionBar(p, buildHud(p, "§b§lAIR GEM", "Dash", "air_dash", 8, "Breeze", "air_breeze", 30, "Pulse", "air_pulse", 15));
@@ -72,7 +71,6 @@ public class GemListener implements Listener {
         }, 0L, 10L);
     }
 
-    // --- Dynamic Action Bar Formatting ---
     private String buildHud(Player player, String gemTitle, String a1Name, String a1Key, int a1Cd, String a2Name, String a2Key, int a2Cd, String a3Name, String a3Key, int a3Cd) {
         return gemTitle + " §8| " +
                 "§f" + a1Name + ": " + formatCooldown(player, a1Key, a1Cd) + " §8| " +
@@ -94,12 +92,15 @@ public class GemListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack mainHand = player.getInventory().getItemInMainHand();
-        ItemStack offHand = player.getInventory().getItemInHand();
+        ItemStack offHand = player.getInventory().getItemInOffHand();
         
         ItemStack gem = getActiveGem(mainHand, offHand);
         if (gem == null) return;
 
         if (!event.getAction().name().contains("RIGHT_CLICK")) return;
+
+        // Prevent double firing if holding gems or items in both hands
+        if (event.getHand() == EquipmentSlot.OFF_HAND && isGemItem(mainHand)) return;
 
         // Active Trident Throwing
         if (activeTridents.getOrDefault(player.getUniqueId(), 0) > 0) {
@@ -148,7 +149,7 @@ public class GemListener implements Listener {
         }
     }
 
-    // --- Ability 3: Drop Key ('Q') Triggers (Main hand & Offhand supported) ---
+    // --- Ability 3: Drop Key ('Q') Triggers ---
     @EventHandler
     public void onItemDrop(PlayerDropItemEvent event) {
         ItemStack item = event.getItemDrop().getItemStack();
@@ -172,7 +173,7 @@ public class GemListener implements Listener {
         }
     }
 
-    // --- Ability Implementations ---
+    // --- Ability Implementation Logic (With Trust System Protections) ---
     private void triggerAirPulse(Player player) {
         player.playSound(player.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST, 1.5f, 1.0f);
         player.getNearbyEntities(6, 6, 6).forEach(entity -> {
@@ -331,7 +332,7 @@ public class GemListener implements Listener {
         }
     }
 
-    // --- Cooldown Logic & Calculations ---
+    // --- Cooldown Logic ---
     private boolean checkCooldown(Player player, String ability, int seconds) {
         long remaining = getRemainingCooldownSeconds(player, ability, seconds);
         if (remaining > 0) return false;
