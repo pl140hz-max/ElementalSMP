@@ -1,18 +1,36 @@
-name: GemsPlugin
+name: ElementalGems
 version: 1.0.0
-main: com.elementalsmp.gems.GemsPlugin
-api-version: 1.21
-authors: [ElementalSMP]
-description: Elemental Gems plugin featuring custom abilities and cross-platform support.
+main: com.elementalsmp.gems.ElementalGemsMain
+api-version: '1.20'
+author: ElementalSMP
+description: Custom elemental gems plugin with unique abilities, UI cooldowns, and player trust management.
 
 commands:
   givegem:
-    description: Gives an Elemental Gem to a player.
-    usage: /givegem <player> <type>
-    permission: gems.command.give
-    permission-message: You do not have permission to use this command.
+    description: Gives an elemental gem to a player.
+    usage: /givegem <player> <air|fire|earth|water>
+    permission: elementalgems.admin
+    permission-message: §cYou do not have permission to use this command.
+  trust:
+    description: Trust a player so they don't take damage from your gem abilities.
+    usage: /trust <player>
+    permission: elementalgems.trust
+    permission-message: §cYou do not have permission to use this command.
+  untrust:
+    description: Remove a player from your trusted list.
+    usage: /untrust <player>
+    permission: elementalgems.trust
+    permission-message: §cYou do not have permission to use this command.
+  trustlist:
+    description: View all players currently on your trusted list.
+    usage: /trustlist
+    permission: elementalgems.trust
+    permission-message: §cYou do not have permission to use this command.
 
 permissions:
-  gems.command.give:
-    description: Allows giving gem items to players.
+  elementalgems.admin:
+    description: Allows giving elemental gems to players.
     default: op
+  elementalgems.trust:
+    description: Allows players to manage their trusted players list.
+    default: true
