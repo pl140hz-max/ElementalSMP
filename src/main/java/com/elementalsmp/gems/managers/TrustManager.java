@@ -4,24 +4,39 @@ import java.util.*;
 
 public class TrustManager {
 
-    // Key: Player UUID, Value: Set of Trusted Player UUIDs
+    // Map storing Player UUID -> Set of Trusted Player UUIDs
     private final Map<UUID, Set<UUID>> trustedPlayers = new HashMap<>();
 
-    public boolean trustPlayer(UUID owner, UUID target) {
-        trustedPlayers.putIfAbsent(owner, new HashSet<>());
-        return trustedPlayers.get(owner).add(target);
+    /**
+     * Trusts a target player.
+     */
+    public void trustPlayer(UUID player, UUID target) {
+        trustedPlayers.computeIfAbsent(player, k -> new HashSet<>()).add(target);
     }
 
-    public boolean untrustPlayer(UUID owner, UUID target) {
-        if (!trustedPlayers.containsKey(owner)) return false;
-        return trustedPlayers.get(owner).remove(target);
+    /**
+     * Untrusts a target player.
+     */
+    public void untrustPlayer(UUID player, UUID target) {
+        Set<UUID> trusted = trustedPlayers.get(player);
+        if (trusted != null) {
+            trusted.remove(target);
+        }
     }
 
-    public boolean isTrusted(UUID owner, UUID target) {
-        return trustedPlayers.getOrDefault(owner, Collections.emptySet()).contains(target);
+    /**
+     * Checks if a target player is trusted by the main player.
+     */
+    public boolean isTrusted(UUID player, UUID target) {
+        Set<UUID> trusted = trustedPlayers.get(player);
+        return trusted != null && trusted.contains(target);
     }
 
-    public Set<UUID> getTrustedPlayers(UUID owner) {
-        return trustedPlayers.getOrDefault(owner, Collections.emptySet());
+    /**
+     * Returns the set of UUIDs trusted by the player.
+     * Required for /trustlist in TrustCommand.
+     */
+    public Set<UUID> getTrusted(UUID player) {
+        return trustedPlayers.getOrDefault(player, Collections.emptySet());
     }
 }
