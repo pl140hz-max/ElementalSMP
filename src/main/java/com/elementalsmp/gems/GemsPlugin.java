@@ -1,44 +1,45 @@
 package com.elementalsmp.gems;
 
 import com.elementalsmp.gems.commands.GiveGemCommand;
-import com.elementalsmp.gems.commands.TrustCommands;
+import com.elementalsmp.gems.commands.TrustCommand;
 import com.elementalsmp.gems.listeners.GemListener;
 import com.elementalsmp.gems.managers.TrustManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class GemsPlugin extends JavaPlugin {
+public class GemsPlugin extends JavaPlugin {
 
     private TrustManager trustManager;
 
     @Override
     public void onEnable() {
-        // Instantiate TrustManager first
+        // Initialize Managers
         this.trustManager = new TrustManager();
 
-        // Register Event Listener passing BOTH 'this' and 'trustManager'
+        // Register Event Listeners
         getServer().getPluginManager().registerEvents(new GemListener(this, trustManager), this);
 
-        // Register /givegem Command
-        GiveGemCommand giveGemCmd = new GiveGemCommand();
+        // Register Trust Commands
+        TrustCommand trustCommand = new TrustCommand(trustManager);
+        if (getCommand("trust") != null) getCommand("trust").setExecutor(trustCommand);
+        if (getCommand("untrust") != null) getCommand("untrust").setExecutor(trustCommand);
+        if (getCommand("trustlist") != null) getCommand("trustlist").setExecutor(trustCommand);
+
+        // Register Give Gem Command
+        GiveGemCommand giveGemCommand = new GiveGemCommand();
         if (getCommand("givegem") != null) {
-            getCommand("givegem").setExecutor(giveGemCmd);
-            getCommand("givegem").setTabCompleter(giveGemCmd);
+            getCommand("givegem").setExecutor(giveGemCommand);
+            getCommand("givegem").setTabCompleter(giveGemCommand);
         }
 
-        // Register Trust Commands (/trust, /untrust, /trustlist)
-        TrustCommands trustCmds = new TrustCommands(trustManager);
-        for (String cmd : new String[]{"trust", "untrust", "trustlist"}) {
-            if (getCommand(cmd) != null) {
-                getCommand(cmd).setExecutor(trustCmds);
-                getCommand(cmd).setTabCompleter(trustCmds);
-            }
-        }
-
-        getLogger().info("Elemental Gems Plugin enabled successfully!");
+        getLogger().info("ElementalGems has been successfully enabled!");
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("Elemental Gems Plugin disabled!");
+        getLogger().info("ElementalGems has been disabled.");
+    }
+
+    public TrustManager getTrustManager() {
+        return trustManager;
     }
 }
